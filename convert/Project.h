@@ -32,7 +32,6 @@ private:
 
 	float ParsePosition(std::string &pos);
 	Feeder *AddFeederForComponent(Component *comp);
-	int FindFeederIDByComponent(Component *comp);
 	Feeder *FindFeederByComponent(Component *comp);
 	CSVRow CSVParseLine(std::istream &file);
 	int CSVFindColIndex(CSVRow &CSVLine, std::string colName);

@@ -11,7 +11,7 @@
 #include <fstream>
 #include <string>
 
-#include "component.h"
+#include "Component.h"
 
 class Feeder
 {

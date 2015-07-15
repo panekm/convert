@@ -106,32 +106,15 @@ Feeder *Project::AddFeederForComponent(Component *comp)
 	return feeder;
 }
 
-int Project::FindFeederIDByComponent(Component *comp)
-{
-	int ret = 1;
-	for (auto feeder : m_feeders)
-	{
-		if (feeder->ComponentMatches(comp))
-		{
-			return ret;
-		}
-		ret++;
-	}
-
-	return -1;
-}
-
 Feeder *Project::FindFeederByComponent(Component *comp)
 {
-	for (auto feeder : m_feeders)
+	auto it = std::find_if(m_feeders.begin(), m_feeders.end(), 
+		[&comp](Feeder *f) { return f->ComponentMatches(comp); });
+	if (it == m_feeders.end())
 	{
-		if (feeder->ComponentMatches(comp))
-		{
-			return feeder;
-		}
+		return nullptr;
 	}
-
-	return nullptr;
+	return *it;
 }
 
 CSVRow Project::CSVParseLine(std::istream &file)
@@ -163,16 +146,12 @@ CSVRow Project::CSVParseLine(std::istream &file)
 
 int Project::CSVFindColIndex(CSVRow &CSVLine, std::string colName)
 {
-	int index = 0;
-	for (auto s : CSVLine)
+	auto it = std::find(CSVLine.begin(), CSVLine.end(), colName);
+	if (it == CSVLine.end())
 	{
-		if (s.compare(colName) == 0)
-		{
-			return index;
-		}
-		index++;
+		return -1;
 	}
-	return -1;
+	return std::distance(CSVLine.begin(), it);
 }
 
 float Project::ParsePosition(std::string &pos)
