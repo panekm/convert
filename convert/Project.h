@@ -1,18 +1,21 @@
 /*
- * Project.h
- *
- *  Created on: Jul 14, 2015
- *      Author: mpanek
- */
+* Project.h
+*
+*  Created on: Jul 14, 2015
+*      Author: mpanek
+*/
 
 #ifndef PROJECT_H_
 #define PROJECT_H_
 
 #include <string>
 #include <list>
+#include <vector>
 
 #include "Feeder.h"
 #include "Component.h"
+
+typedef std::vector<std::string> CSVRow;
 
 class Project
 {
@@ -21,9 +24,7 @@ public:
 	virtual ~Project();
 
 	bool SaveToFile(const std::string &fileName);
-	bool LoadAltium(const std::string &fileName);
-
-	void Random(int count);
+	bool LoadCSV(const std::string &fileName);
 private:
 	float m_width = 370.0f;
 	float m_height = 240.0f;
@@ -33,6 +34,8 @@ private:
 	Feeder *AddFeederForComponent(Component *comp);
 	int FindFeederIDByComponent(Component *comp);
 	Feeder *FindFeederByComponent(Component *comp);
+	CSVRow CSVParseLine(std::istream &file);
+	int CSVFindColIndex(CSVRow &CSVLine, std::string colName);
 
 	std::list<Component *> m_components;
 	std::list<Feeder *> m_feeders;

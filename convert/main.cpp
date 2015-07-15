@@ -1,24 +1,43 @@
 /*
- * main.cpp
- *
- *  Created on: May 21, 2015
- *      Author: mpanek
- */
+* main.cpp
+*
+*  Created on: May 21, 2015
+*      Author: mpanek
+*/
 
 #include "Project.h"
 
 #include <iostream>
-
-#define MIL 0.0254
+#include <string>
+#include <algorithm>
 
 int main(int argc, char *argv[])
 {
 	std::cout << "Convert 1.0a" << std::endl;
+
+	if (argc < 2)
+	{
+		std::cout << "Usage: " << argv[0] << " input_file [output_file]" << std::endl;
+		return -1;
+	}
+
 	Project project;
-	project.Random(100);
 
-	project.SaveToFile("proj.smf");
+	project.LoadCSV(argv[1]);
+	std::string outputFileName;
+	if (argc < 3)
+	{
+		outputFileName = argv[1];
+		size_t index = outputFileName.find_last_of('.');
+		if (index != std::string::npos)
+		{
+			outputFileName.resize(index);
+		}
+		outputFileName += ".smf";
+	}
+	else
+	{
+		outputFileName = argv[2];
+	}
+	project.SaveToFile(outputFileName);
 }
-
-
-

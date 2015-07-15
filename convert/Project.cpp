@@ -1,9 +1,9 @@
 /*
- * Project.cpp
- *
- *  Created on: Jul 14, 2015
- *      Author: mpanek
- */
+* Project.cpp
+*
+*  Created on: Jul 14, 2015
+*      Author: mpanek
+*/
 
 #include "Project.h"
 
@@ -11,6 +11,9 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <algorithm>
+
+#define MIL 0.0254f
 
 Project::Project()
 {
@@ -25,6 +28,8 @@ Project::~Project()
 
 bool Project::SaveToFile(const std::string &fileName)
 {
+	std::cout << "Saving project to file: " << fileName << std::endl;
+
 	std::fstream file(fileName, std::ios::out);
 
 	file << "{ SMF - NEXT_INFO - PART }" << std::endl;
@@ -61,7 +66,7 @@ bool Project::SaveToFile(const std::string &fileName)
 	file << "322;" << std::endl; //version
 	file << "{ SMF - NEXT_INFO - PART }" << std::endl;
 
-	for(auto component : m_components)
+	for (auto component : m_components)
 	{
 		//save component to file
 		component->SaveToFile(file);
@@ -69,7 +74,7 @@ bool Project::SaveToFile(const std::string &fileName)
 
 	file << "{ SMF - NEXT_INFO - PART }" << std::endl;
 
-	for(auto feeder : m_feeders)
+	for (auto feeder : m_feeders)
 	{
 		//save feeder to file
 		feeder->SaveToFile(file);
@@ -88,6 +93,8 @@ bool Project::SaveToFile(const std::string &fileName)
 
 	file.close();
 
+	std::cout << "Done" << std::endl;
+
 	return true;
 }
 
@@ -102,9 +109,9 @@ Feeder *Project::AddFeederForComponent(Component *comp)
 int Project::FindFeederIDByComponent(Component *comp)
 {
 	int ret = 1;
-	for(auto feeder : m_feeders)
+	for (auto feeder : m_feeders)
 	{
-		if(feeder->ComponentMatches(comp))
+		if (feeder->ComponentMatches(comp))
 		{
 			return ret;
 		}
@@ -116,9 +123,9 @@ int Project::FindFeederIDByComponent(Component *comp)
 
 Feeder *Project::FindFeederByComponent(Component *comp)
 {
-	for(auto feeder : m_feeders)
+	for (auto feeder : m_feeders)
 	{
-		if(feeder->ComponentMatches(comp))
+		if (feeder->ComponentMatches(comp))
 		{
 			return feeder;
 		}
@@ -127,89 +134,110 @@ Feeder *Project::FindFeederByComponent(Component *comp)
 	return nullptr;
 }
 
+CSVRow Project::CSVParseLine(std::istream &file)
+{
+	CSVRow ret;
+	std::string line;
+	std::getline(file, line);
+
+	std::stringstream ss(line);
+	std::string col;
+
+	while (std::getline(ss, col, ','))
+	{
+		std::string col2;
+		while (std::count(col.begin(), col.end(), '"') % 2 != 0 && std::getline(ss, col2, ','))
+		{
+			//we are in the middle of column
+			col += '/'; //replace comma with slash, as Place_it won't accept commas in values
+			col += col2;
+		}
+		//remove all quotation marks
+		col.erase(std::remove(col.begin(), col.end(), '"'), col.end());
+		ret.push_back(col);
+		//	std::cout << "Added column: " << col << std::endl;
+	}
+
+	return ret;
+}
+
+int Project::CSVFindColIndex(CSVRow &CSVLine, std::string colName)
+{
+	int index = 0;
+	for (auto s : CSVLine)
+	{
+		if (s.compare(colName) == 0)
+		{
+			return index;
+		}
+		index++;
+	}
+	return -1;
+}
+
 float Project::ParsePosition(std::string &pos)
 {
+	size_t index = pos.find("mm");
+	if (index != std::string::npos)
+	{
+		pos.resize(index);
+		return std::stof(pos);
+	}
+	index = pos.find("mil");
+	if (index != std::string::npos)
+	{
+		return std::stof(pos) * MIL;
+	}
 	return 0.0f;
 }
 
-//really primitive parser
-bool Project::LoadAltium(const std::string &fileName)
+bool Project::LoadCSV(const std::string &fileName)
 {
-    std::fstream file(fileName);
-    std::string line;
-    std::vector<std::string> header;
+	std::cout << "Trying to load project from file " << fileName << std::endl;
 
-    getline(file, line);
-    getline(file, line);
+	std::ifstream file(fileName);
+	CSVRow header = CSVParseLine(file);
+	int line = 1;
 
-    //Designator Footprint Mid X Mid Y
-    //Ref X Ref Y Pad X  Pad Y TB Rotation Comment
+	int designatorCol = CSVFindColIndex(header, "Designator");
+	int footprintCol = CSVFindColIndex(header, "Footprint");
+	int midXCol = CSVFindColIndex(header, "Mid X");
+	int midYCol = CSVFindColIndex(header, "Mid Y");
+	int layerCol = CSVFindColIndex(header, "Layer");
+	int rotCol = CSVFindColIndex(header, "Rotation");
+	int valueCol = CSVFindColIndex(header, "Comment");
 
-    while(getline(file, line))
-    {
-    	if(!line.length())
-    	{
-    		continue;
-    	}
-
-    	std::stringstream ss(line);
-    	unsigned int col = 0;
-
-		Component *comp = new Component();
-
-    	while(true)
-    	{
-    		std::string temp;
-    		ss >> temp;
-    		if(temp.length() == 0 || col >= header.size())
-    		{
-    			break;
-    		}
-
-    		if(header[col].compare("Designator") == 0)
-    		{
-    	//		comp->designator = temp;
-    		}
-    		else if(header[col].compare("Mid X") == 0)
-    		{
-    	//		comp->mid_x = ParsePosition(temp);
-    		}
-    		else if(header[col].compare("Mid Y") == 0)
-    		{
-    	//		comp->mid_y = ParsePosition(temp);
-    		}
-    		else if(header[col].compare("Comment") == 0) //value
-    		{
-    	//		comp->value = temp;
-    		}
-
-    		col++;
-    	}
-
-    	Feeder *feeder = FindFeederByComponent(comp);
-
-    	if(feeder == nullptr)
-    	{
-			feeder = AddFeederForComponent(comp);
-    	}
-
-    	comp->SetFeeder(feeder);
-    }
-
-	return true;
-}
-
-void Project::Random(int count)
-{
-	for (int i = 0; i < count; i++)
+	if (designatorCol == -1 || footprintCol == -1 || midXCol == -1
+		|| midYCol == -1 || layerCol == -1 || rotCol == -1
+		|| valueCol == -1)
 	{
+		std::cout << "Error parsing CSV header. Column not found" << std::endl;
+		file.close();
+		return false;
+	}
+
+	//Designator Footprint Mid X Mid Y
+	//Ref X Ref Y Pad X  Pad Y TB Rotation Comment
+
+	while (file.eof() == false)
+	{
+		line++;
+		CSVRow row = CSVParseLine(file);
+		if (row.size() != header.size())
+		{
+			std::cout << "Skipping line: " << line << std::endl;
+			continue;
+		}
+
 		Component *comp = new Component();
-		comp->SetDesignator("C" + std::to_string(i));
-		comp->SetFootprint(std::string("1206"));
-		comp->SetValue(std::to_string(rand() % 5) + "N");
-		comp->SetMidX((rand() % 1500) / 8.0f);
-		comp->SetMidY((rand() % 1500) / 8.0f);
-		comp->SetRotation(rand() % 359);
+
+		comp->SetDesignator(row[designatorCol]);
+		comp->SetFootprint(row[footprintCol]);
+		comp->SetValue(row[valueCol]);
+		comp->SetMidX(ParsePosition(row[midXCol]));
+		comp->SetMidY(ParsePosition(row[midYCol]));
+		comp->SetRotation(std::stof(row[rotCol]));
+
 		Feeder *feeder = FindFeederByComponent(comp);
 
 		if (feeder == nullptr)
@@ -218,6 +246,13 @@ void Project::Random(int count)
 		}
 
 		comp->SetFeeder(feeder);
+
 		m_components.push_back(comp);
 	}
+
+	file.close();
+
+	std::cout << "Done" << std::endl;
+
+	return true;
 }
