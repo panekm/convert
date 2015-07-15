@@ -68,6 +68,7 @@
   <ItemGroup>
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="Feeder.cpp" />
+    <ClCompile Include="LICENSE" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Project.cpp" />
   </ItemGroup>
