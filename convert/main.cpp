@@ -17,13 +17,21 @@ int main(int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		std::cout << "Usage: " << argv[0] << " input_file [output_file]" << std::endl;
+		std::cout << "Usage: " << argv[0] 
+			<< " input_file [output_file]" << std::endl;
 		return -1;
 	}
 
 	Project project;
 
-	project.LoadCSV(argv[1]);
+	if (project.LoadCSV(argv[1]) == false)
+	{
+		std::cout << "Error loading " << argv[1] 
+			<< ". Quiting." << std::endl;
+		return -1;
+	}
+	
+	
 	std::string outputFileName;
 	if (argc < 3)
 	{
@@ -39,5 +47,13 @@ int main(int argc, char *argv[])
 	{
 		outputFileName = argv[2];
 	}
-	project.SaveToFile(outputFileName);
+
+	if (project.SaveToFile(outputFileName) == false)
+	{
+		std::cout << "Error saving project into: " 
+			<< outputFileName << std::endl;
+		return -1;
+	}
+
+	return 0;
 }
